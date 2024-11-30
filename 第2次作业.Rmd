@@ -1,0 +1,358 @@
+---
+title: "第2次作业"
+author: "谢宝进"
+documentclass: ctexart
+geometry: "left=2.5cm,right=2cm,top=3cm,bottom=2.5cm"
+output: 
+  pdf_document:
+    fig_caption: yes
+    latex_engine: xelatex
+    number_sections: yes
+    toc: yes
+---
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  message = FALSE,
+  warning = FALSE,
+  error = FALSE,
+  out.width = "100%", 
+  fig.showtext = TRUE,
+  fig.align = "center",
+  comment = "#>",
+  df_print = "tibble",
+  paged.print = FALSE,
+  split = FALSE
+)
+
+library(showtext)
+
+showtext_auto()
+
+# 添加微软雅黑字体
+font_add("Microsoft YaHei", "C:/Windows/Fonts/msyh.ttc")
+
+```
+
+
+
+```{r}
+#加载数据包
+library(tidyverse)
+library(dplyr)
+library(readxl)
+```
+
+
+# 问题1：BigBangTheory
+```{r}
+BigBangTheory <- read_csv("assignment 2/data/BigBangTheory.csv")
+# View(BigBangTheory)
+## a 最少观看人数和最多观看人数
+min(BigBangTheory$`Viewers (millions)`)
+```
+```{r}
+max(BigBangTheory$`Viewers (millions)`)
+```
+
+```{r}
+##b 观看人数的均值、中位数和众数
+mean(BigBangTheory$`Viewers (millions)`)
+```
+```{r}
+median(BigBangTheory$`Viewers (millions)`)
+```
+```{r}
+as.numeric(names(sort(table(BigBangTheory$`Viewers (millions)`), decreasing = TRUE)[1]))
+```
+```{r}
+##c 第一分位数和第三分位数
+quantile(BigBangTheory$`Viewers (millions)`,probs =0.25)
+```
+```{r}
+quantile(BigBangTheory$`Viewers (millions)`,probs =0.75)
+```
+```{r}
+##d 讨论2011-2012季收视率上升还是下降
+ggplot(data=BigBangTheory,aes(x=`Air Date`,y=`Viewers (millions)`))+geom_point()+geom_line()
+```
+#问题2：NBAPlayerPts
+```{r}
+##加载数据
+data_1 <- read_csv("assignment 2/data/NBAPlayerPts.csv")
+```
+```{r}
+##a 统计频率分布
+breaks <- seq(10, 30, by = 2)
+frequency <-table(cut(data_1$PPG, breaks = breaks))
+print(frequency)
+```
+```{r}
+##b 相对频率分布
+relative_frequency <-prop.table(frequency)
+print(relative_frequency)
+```
+```{r}
+##c 累积百分比分布
+cumulative_percent <- cumsum(relative_frequency) 
+print(cumulative_percent)
+```
+```{r}
+##d 直方图
+hist(data_1$PPG, xlab = "PPG", col = "skyblue", border = "white")
+```
+```{r}
+##e 偏态分析
+skewness <- sum((data_1$PPG - mean(data_1$PPG))^3) / (length(data_1$PPG) * sd(data_1$PPG)^3)
+```
+```{r}
+# f. 每场比赛得分至少 20 分的球员百分比
+percentage_20plus <- mean(data_1$PPG >= 20) 
+print(percentage_20plus)
+```
+#问题3：调查样本及概率问题
+```{r}
+##a 样本大小？
+# 已知值
+std_error <- 20
+std_dev <- 500
+n <- (std_dev / std_error)^2
+print(n)
+```
+```{r}
+##b ±25内的概率
+z <- 25 / std_error
+prob <- pnorm(z) - pnorm(-z)
+print(prob)
+```
+#问题4：青年杂志
+```{r}
+#加载数据
+data_2 <- read_csv("assignment 2/data/Professional.csv")
+view(data_2)
+```
+```{r}
+##a 描述性统计
+summary(data_2)
+```
+
+```{r}
+##b 年龄和收入在95%执行水平的置信区间
+t.test(data_2$Age,conf.level = 0.95)$conf.int  #计算年龄的区间
+t.test(data_2$`Household Income ($)`,conf.level = 0.95)$conf.int #计算收入的区间
+```
+#问题5：Quality Associate
+```{r}
+##a 对每个样本进行假设检验，并确定应采取哪些措施。
+
+quality <- read_csv("assignment 2/data/Quality.csv")  #导入数据
+
+alpha <- 0.01  # 定义显著性水平
+
+sample_means <- apply(quality, 1, mean)  # 计算样本均值
+sample_sds <- apply(quality, 1, sd) # 计算标准差
+
+# 总体标准差
+sigma <- 0.21
+n <- 30
+
+# 进行假设检验
+t_tests <- sapply(1:nrow(quality), function(i) {
+  t_stat <- (sample_means[i] - 12) / (sigma / sqrt(n))
+  p_value <- 2 * pt(abs(t_stat), df = n - 1, lower.tail = FALSE)
+  list(t_stat = t_stat, p_value = p_value)
+})
+
+t_tests # 输出结果
+
+##b 计算4个样本的标准差，并判断假设是否合理
+
+sample_sds
+
+# 判断假设是否合理
+mean(sample_sds)  # 计算样本标准差的平均值
+
+##c 计算样本的界限，并判断新样本是否在界限内，如果不在则需采取纠正措施。
+# 计算控制限
+upper_limit <- 12 + 3 * (sigma / sqrt(n))
+lower_limit <- 12 - 3 * (sigma / sqrt(n))
+
+# 输出界限
+c(upper_limit, lower_limit)
+
+##d.讨论将显著性水平提高到更大值的影响。如果将显著性水平提高，哪种错误可能会增加？
+
+# 如果显著性水平增加，第一类错误（错误地拒绝正确的零假设）的风险会增加。
+# 这意味着可能会更频繁地采取不必要的纠正措施，导致成本增加和生产效率降低。
+```
+#问题6：入住率
+```{r}
+occupancy <- read_csv("assignment 2/data/Occupancy.csv") #数据导入
+
+##a 估算2007年3月第一周和2008年3月第一周的单元出租比例
+
+#将原始数据转化为0/1，区分是否出租
+occupancy$`Mar-07` <- ifelse(occupancy$`Mar-07`=="Yes",1,0)
+occupancy$`Mar-08` <- ifelse(occupancy$`Mar-08`=="Yes",1,0)
+
+#计算样本大小
+n <- nrow(occupancy)
+
+# 计算2007年3月第一周出租单位的比例
+prop_2007 <- mean(occupancy$`Mar-07`)  
+
+# 计算2008年3月第一周出租单位的比例
+prop_2008 <- mean(occupancy$`Mar-08`)  
+
+# 打印结果
+cat("Proportion of units rented in Mar.07:", prop_2007, "\n")
+cat("Proportion of units rented in Mar.08:", prop_2008, "\n")
+
+##b 为比例之差提供一个95%的置信区间
+
+se_diff <- sqrt((prop_2007 * (1 - prop_2007) / n) + (prop_2008 * (1 - prop_2008) / n)) # 计算比例差异的标准误差
+
+ci_diff <- c(prop_2008 - prop_2007 - 1.96 * se_diff, prop_2008 - prop_2007 + 1.96 * se_diff)  # 计算95%置信区间
+
+# 输出结果
+cat("95% Confidence Interval for the difference in proportions:", ci_diff, "\n")
+
+##c 根据发现，2008年3月的租赁率是否会相比前一年同期有所上涨？
+
+  cat("有明显证据证明08年3月租金会同比上升.\n")
+
+```
+#问题7：空军训练方案
+```{r}
+Training <- read_csv("assignment 2/data/Training.csv") #导入数据
+##a use appropriate descriptive statistics to summarize the training time data for each method.
+#what similarities or differences do you observe from the sample data?
+# 描述性统计
+summary_current <- summary(Training$Current)
+summary_proposed <- summary(Training$Proposed)
+# 打印结果
+cat("当前方法的描述性统计:\n")
+print(summary_current)
+cat("提议方法的描述性统计:\n")
+print(summary_proposed)
+##b Comment on any difference between the population means for the two methods. Discuss
+# your findings.
+# t检验
+t_test_result <- t.test(Training$Current, Training$Proposed, var.equal = TRUE)
+print(t_test_result)
+
+#3.c. compute the standard deviation and variance for each training method. conduct a hypothesis
+#test about the equality of population variances for the two training methods. Discuss your
+#findings
+# 计算标准差和方差
+sd_current <- sd(Training$Current)
+var_current <- var(Training$Current)
+sd_proposed <- sd(Training$Proposed)
+var_proposed <- var(Training$Proposed)
+
+# 方差齐性检验
+var_test_result <- var.test(Training$Current, Training$Proposed)
+print(var_test_result)
+
+#4. what conclusion can you reach about any differences between the two methods? what is your
+#recommendation? explain
+#结论：两种方法的均值没有显著差异，但方差存在显著差异，表明提议方法在训练时间上更加一致。
+#5.can you suggest other data or testing that might be desirable before making a final decision
+#on the training program to be used in the future?
+#鉴于两种方法的均值相似，但提议方法的方差较小，可能更值得考虑采用提议方法，因为它可能提供更一致的训练体验。
+```
+#问题8:凯美瑞
+```{r}
+#加载数据
+camry <-  read_csv("assignment 2/data/Camry.csv")
+##a 以汽车里程数为横轴，价格为纵轴绘制散点图
+#  绘制散点图
+ggplot(camry, aes(x = camry$`Miles (1000s)`, y = camry$`Price ($1000s)`)) +
+  geom_point() +  # 添加散点图
+  geom_smooth()  # 添加默认的平滑拟合线
+
+##b 在部分（a）中绘制的散点图显示了这两个变量之间有什么关系？
+#从散点图中，我们可以看出里程和价格之间存在负相关关系。随着里程的增加，价格呈下降趋势
+
+##c 根据里程数（以千为单位）来开发一个估计的回归方程，用于预测价格（以千美元为单位）。
+# 估计回归方程
+model <- lm(camry$`Price ($1000s)` ~ camry$`Miles (1000s)`, data=camry)
+summary(model)
+
+##d 在0.05的显著性水平下检验是否存在显著关系。
+#答：从回归方程的估计结果中，我们可以看到Miles的p值为0.000348，远小于0.05，因此在0.05的显著性水平下，里程对价格有显著的影响。
+
+##e  估计的回归方程是否提供了良好的拟合？请解释。
+#答：R平方值 0.5387，调整后的R平方值为0.5115，这表明回归方程对数据的拟合度较好，可以解释51.15%的价格变化。
+
+##f 对估计的回归方程的斜率进行解释
+#答：斜率-0.05877表示每增加1000英里的里程，价格平均下降0.05877千美元。
+
+##g 假设你正在考虑购买一辆已经行驶了60,000英里的二手2007款凯美瑞。使用在部分（c）中开发的估计回归方程来预测这辆车的价格。你会以这个价格向卖家报价吗？
+
+# 获取模型的系数
+coefficients <- coef(model)
+intercept <- coefficients[1]
+slope <- coefficients[2]
+
+# 计算预测价格
+predicted_price <- intercept + slope * 60
+predicted_price
+predicted_price_2 <- round(predicted_price, 2)
+paste("预测价格$",predicted_price_2,"千元")
+```
+#问题9：流失率
+```{r}
+data <- read_excel("assignment 2/data/WE.xlsx")  #导入数据
+##a 通过可视化探索流失客户与⾮流失客户的⾏为特点（或特点对⽐），你能发现流失与⾮流失客
+  #户⾏为在哪些指标有可能存在显著不同？
+data_long <- data %>%
+  pivot_longer(cols = -流失, names_to = "指标", values_to = "值") %>%
+  mutate(流失 = factor(流失, labels = c("非流失", "流失")))
+
+ggplot(data_long, aes(x = 流失, y = 值, fill = 流失)) +
+  geom_boxplot() +
+  facet_wrap(~指标, scales = "free") +
+  labs(title = "流失与非流失客户行为特点比较", x = "客户状态", y = "指标值")
+
+##b 通过均值⽐较的⽅式验证上述不同是否显著。
+# 计算均值并进行t检验
+t_tests <- data %>%
+  pivot_longer(cols = -流失, names_to = "指标", values_to = "值") %>%
+  group_by(指标) %>%
+  do({
+    t_test <- t.test(.$值[.$流失 == 0], .$值[.$流失 == 1])
+    data.frame(指标 = unique(.$指标), 非流失_mean = mean(.$值[.$流失 == 0], na.rm = TRUE), 流失_mean = mean(.$值[.$流失 == 1], na.rm = TRUE), p_value = t_test$p.value)
+  }) %>%
+  ungroup()
+
+# 显示t检验结果
+t_tests
+print(t_tests)
+
+##c 以”流失“为因变量，其他你认为重要的变量为⾃变量（提示：a、b两步的发现），建⽴回归⽅
+  #程对是否流失进⾏预测。
+model <- glm(流失 ~ 客户ID + 当月客户幸福指数 + 客户幸福指数相比上月变化 + 当月客户支持  + 当月服务优先级, data = data, family = binomial)
+
+# 显示模型摘要
+summary(model)
+
+##d 根据上⼀步预测的结果，对尚未流失（流失=0）的客户进⾏流失可能性排序，并给出流失可能
+  #性最⼤的前100名⽤户ID列表。
+
+# 筛选出尚未流失的客户
+data_non_churn <- data[data$流失 == 0, ]
+
+# 预测尚未流失的客户流失可能性
+predictions <- predict(model, newdata = data_non_churn, type = "response")
+
+# 将预测结果添加到筛选后的数据框中
+data_non_churn$predictions <- predictions
+
+# 对尚未流失的客户进行排序
+data_non_churn_sorted <- data_non_churn[order(-data_non_churn$predictions), ]
+
+# 显示流失可能性最大的前100名用户ID
+top100_users <- head(data_non_churn_sorted$客户ID, 100)
+print(top100_users)
+```
+
